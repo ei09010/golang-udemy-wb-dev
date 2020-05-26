@@ -82,6 +82,20 @@ func getUserSessionCookie(w http.ResponseWriter, req *http.Request) *http.Cookie
 	return ck
 }
 
+func appendPredefinedValueToCooki(ck *http.Cookie, w http.ResponseWriter, name string) *http.Cookie {
+	s := ck.Value
+
+	if !strings.Contains(s, name) {
+		s += "|" + name
+	}
+
+	ck.Value = s
+
+	http.SetCookie(w, ck)
+
+	return ck
+}
+
 func appendValueCookie(ck *http.Cookie, w http.ResponseWriter) []string {
 
 	picNames := strings.Split(ck.Value, coockieDelimiter)
