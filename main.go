@@ -1,9 +1,14 @@
 package main
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"html/template"
+	"io"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -31,13 +36,57 @@ func index(w http.ResponseWriter, req *http.Request) {
 
 	sessionCookie := getUserSessionCookie(w, req)
 
-	counterCookie := getUserVisitCouterCookie(w, req)
+	//counterCookie := getUserVisitCouterCookie(w, req)
 
-	newCoockieValues := appendValueCookie(sessionCookie, w)
+	//newCoockieValues := appendValueCookie(sessionCookie, w)
 
-	fmt.Printf("Sesssion ID cookie is the following: %v and CounterCookie is the following: %v", sessionCookie.Value, counterCookie.Value)
+	//fmt.Printf("Sesssion ID cookie is the following: %v and CounterCookie is the following: %v", sessionCookie.Value, counterCookie.Value)
 
-	tpl.ExecuteTemplate(w, "index.gohtml", newCoockieValues)
+	if req.Method == http.MethodPost {
+		multiPartFile, fileHeader, err := req.FormFile("nf")
+
+		if err != nil {
+			log.Print(err)
+		}
+		defer multiPartFile.Close()
+
+		// create sha for file name
+		extension := strings.Split(fileHeader.Filename, ".")[1]
+		hash := sha1.New()
+		io.Copy(hash, multiPartFile)
+		fname := fmt.Sprintf("%x", hash.Sum(nil)) + "." + extension
+
+		// create new file
+
+		wd, err := os.Getwd()
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		path := filepath.Join(wd, "public", "pics", fname)
+
+		newFile, err := os.Create(path)
+
+		if err != nil {
+			log.Println(err)
+		}
+
+		defer newFile.Close()
+
+		//copy
+		multiPartFile.Seek(0, 0)
+		io.Copy(newFile, multiPartFile)
+
+		// add filename to user's cookie
+
+		sessionCookie = appendPredefinedValueToCooki(sessionCookie, w, fname)
+
+	}
+
+	xs := strings.Split(sessionCookie.Value, coockieDelimiter)
+
+	tpl.ExecuteTemplate(w, "index.gohtml", xs)
 }
 
 func getUserVisitCouterCookie(w http.ResponseWriter, req *http.Request) *http.Cookie {
