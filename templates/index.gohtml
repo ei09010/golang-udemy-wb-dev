@@ -11,6 +11,11 @@
 <h2>{{.}}</h2>
 {{end}}
 
+<h1>Your pictures:<h1>
+{{range .}}
+<img srs="/public/pics/{{.}}" width="800px">
+{{end}}
+
 <form method="POST" enctype="multipart/form-data">
     <input type="file" name="nf">
     <input type="Submit">
